@@ -77,8 +77,10 @@ async function bootstrap() {
   );
   app.useGlobalFilters(new PrismaExceptionFilter());
   app.enableShutdownHooks();
-  const port = config.get("PORT", 3000);
-  await app.listen(port);
+  const port = Number(config.get("PORT", 3000));
+  // Render health checks connect over the service's internal network, so the
+  // process must listen on every interface instead of a loopback address.
+  await app.listen(port, "0.0.0.0");
   logger.log(`Application running at ${await app.getUrl()}/api/v1`);
   logger.log(`Environment: ${config.get("NODE_ENV", "development")}`);
 }
