@@ -6033,5 +6033,6 @@
     margin:0 6px 0 0;
 }
 /*--- chat mobile seetings css end ----*/
-button._feed_inner_timeline_total_reacts_para,button._total{border:0;background:transparent;padding:0;cursor:pointer}
+button._feed_inner_timeline_total_reacts_para{padding:0;cursor:pointer}
+button._total{border:0;background:transparent;padding:0;cursor:pointer}
 ._liker_names{display:inline-block;margin-left:8px;color:#65676b;font-size:12px;max-width:260px;vertical-align:middle}
