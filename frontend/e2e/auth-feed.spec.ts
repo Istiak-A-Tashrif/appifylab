@@ -58,3 +58,31 @@ test("registration, feed interactions, authorization, and logout", async ({
   await page.goto("/feed");
   await expect(page).toHaveURL(/\/login$/);
 });
+
+test("an invalid session is cleared and redirected to login", async ({
+  page,
+  context,
+}) => {
+  await context.addCookies([
+    {
+      name: "access_token",
+      value: "invalid-access",
+      url: "http://localhost:5173",
+      httpOnly: true,
+      sameSite: "Lax",
+    },
+    {
+      name: "refresh_token",
+      value: "invalid-refresh",
+      url: "http://localhost:5173",
+      httpOnly: true,
+      sameSite: "Lax",
+    },
+  ]);
+
+  await page.goto("/feed");
+  await expect(page).toHaveURL(/\/login$/);
+  const cookies = await context.cookies();
+  expect(cookies.map((cookie) => cookie.name)).not.toContain("access_token");
+  expect(cookies.map((cookie) => cookie.name)).not.toContain("refresh_token");
+});

@@ -2,6 +2,7 @@ import { ENDPOINTS } from './endpoints';
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 let csrfToken: string | null = null;
+let endingSession: Promise<void> | null = null;
 
 async function request(path: string, init?: RequestInit) {
   const method = (init?.method ?? 'GET').toUpperCase();
@@ -21,6 +22,21 @@ async function request(path: string, init?: RequestInit) {
   });
 }
 
+function endSession() {
+  endingSession ??= (async () => {
+    try {
+      await request(ENDPOINTS.auth.logout, { method: 'POST' });
+    } catch {
+      // Navigation still proceeds if the API is temporarily unavailable.
+    }
+    csrfToken = null;
+    if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+      window.location.replace('/login');
+    }
+  })();
+  return endingSession;
+}
+
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   let response = await request(path, init);
   const noRefreshEndpoints: readonly string[] = [ENDPOINTS.auth.login, ENDPOINTS.auth.register, ENDPOINTS.auth.refresh];
@@ -28,6 +44,10 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   if (canRefresh) {
     const refreshed = await request(ENDPOINTS.auth.refresh, { method: 'POST' });
     if (refreshed.ok) response = await request(path, init);
+  }
+  if (response.status === 401 && !noRefreshEndpoints.includes(path)) {
+    await endSession();
+    throw new Error('Your session has expired. Please log in again.');
   }
   if (response.status === 204) return undefined as T;
   const data = await response.json().catch(() => ({})) as { message?: string | string[] };
