@@ -84,7 +84,7 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
               {registration ? (
                 <div className="_social_registration_right">
                   <div className="_social_registration_right_image">
-                    <DesignImage src={`${A}registration.png`} alt="Image" />
+                    <DesignImage src={`${A}registration.png`} alt="Image" loading="eager" />
                   </div>
                   <div className="_social_registration_right_image_dark">
                     <DesignImage src={`${A}registration1.png`} alt="Image" />
@@ -97,6 +97,7 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
                       src={`${A}login.png`}
                       alt="Image"
                       className="_left_img"
+                      loading="eager"
                     />
                   </div>
                 </div>
