@@ -5,6 +5,8 @@ export type Comment = {
   body: string;
   author: Person;
   likes: Person[];
+  likeCount: number;
+  replyCount: number;
   likedByMe: boolean;
   replies: Comment[];
   createdAt: string;
@@ -16,6 +18,8 @@ export type Post = {
   visibility: "PUBLIC" | "PRIVATE";
   author: Person;
   likes: Person[];
+  likeCount: number;
+  commentCount: number;
   likedByMe: boolean;
   comments: Comment[];
   createdAt: string;

@@ -12,16 +12,40 @@ import RightSidebar from "./RightSidebar";
 import ThemeSwitch from "./ThemeSwitch";
 import { api, imageUrl } from "../utils/api";
 import { ENDPOINTS } from "../utils/endpoints";
-import type { Post } from '../types';
-import type { CreatePostInput, FeedAppProps, FeedResponse, ViewPost } from '../types/feed';
+import type { Comment, Person, Post } from "../types";
+import type {
+  CreatePostInput,
+  FeedAppProps,
+  FeedResponse,
+  ViewPost,
+} from "../types/feed";
 const avatar = "/assets/images/post_img.png";
 const relativeTime = (value: string) => {
-  const seconds = Math.max(1, Math.floor((Date.now() - new Date(value).getTime()) / 1000));
+  const seconds = Math.max(
+    1,
+    Math.floor((Date.now() - new Date(value).getTime()) / 1000),
+  );
   if (seconds < 60) return `${seconds}s`;
   if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
   if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
   return `${Math.floor(seconds / 86400)}d`;
 };
+const adaptComment = (comment: Comment, parentId: string | null = null) => ({
+  id: comment.id,
+  name: `${parentId ? "↳ " : ""}${comment.author.firstName} ${comment.author.lastName}`,
+  avatar: parentId
+    ? "/assets/images/comment_img.png"
+    : "/assets/images/txt_img.png",
+  text: comment.body,
+  likes: comment.likeCount,
+  likerNames: comment.likes.map(
+    (person) => `${person.firstName} ${person.lastName}`,
+  ),
+  replyCount: comment.replyCount,
+  time: relativeTime(comment.createdAt),
+  liked: comment.likedByMe,
+  parentId,
+});
 const adapt = (p: Post): ViewPost => ({
   id: p.id,
   author: `${p.author.firstName} ${p.author.lastName}`,
@@ -33,49 +57,36 @@ const adapt = (p: Post): ViewPost => ({
   reactionAvatars: p.likes
     .slice(0, 5)
     .map(() => "/assets/images/react_img1.png"),
-  reactionExtra: p.likes.length,
+  reactionExtra: p.likeCount,
   likerNames: p.likes.map((person) => `${person.firstName} ${person.lastName}`),
   shareCount: 0,
   liked: p.likedByMe,
   likeLabel: "Like",
-  previousCommentCount: 0,
+  commentCount: p.commentCount,
+  previousCommentCount: Math.max(0, p.commentCount - p.comments.length),
   comments: p.comments.flatMap((c) => [
-    {
-      id: c.id,
-      name: `${c.author.firstName} ${c.author.lastName}`,
-      avatar: "/assets/images/txt_img.png",
-      text: c.body,
-      likes: c.likes.length,
-      likerNames: c.likes.map((person) => `${person.firstName} ${person.lastName}`),
-      time: relativeTime(c.createdAt),
-      liked: c.likedByMe,
-      parentId: null,
-    },
-    ...c.replies.map((r) => ({
-      id: r.id,
-      name: `↳ ${r.author.firstName} ${r.author.lastName}`,
-      avatar: "/assets/images/comment_img.png",
-      text: r.body,
-      likes: r.likes.length,
-      likerNames: r.likes.map((person) => `${person.firstName} ${person.lastName}`),
-      time: relativeTime(r.createdAt),
-      liked: r.likedByMe,
-      parentId: c.id,
-    })),
+    adaptComment(c),
+    ...c.replies.map((reply) => adaptComment(reply, c.id)),
   ]),
 });
+type Page<T> = { items: T[]; nextCursor: string | null };
 export default function App({ user }: FeedAppProps) {
   const router = useRouter();
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const [posts, setPosts] = useState<ViewPost[]>([]),
     [nextCursor, setNextCursor] = useState<string | null>(null),
     [loadingMore, setLoadingMore] = useState(false),
+    [commentCursors, setCommentCursors] = useState<Record<string, string | null | undefined>>({}),
+    [replyCursors, setReplyCursors] = useState<Record<string, string | null | undefined>>({}),
     [dark, setDark] = useState(false),
     [error, setError] = useState("");
   const load = useCallback(
     () =>
       api<FeedResponse>(ENDPOINTS.feed.list())
-        .then((x) => { setPosts(x.items.map(adapt)); setNextCursor(x.nextCursor); })
+        .then((x) => {
+          setPosts(x.items.map(adapt));
+          setNextCursor(x.nextCursor);
+        })
         .catch((e) => setError(e.message)),
     [],
   );
@@ -100,14 +111,19 @@ export default function App({ user }: FeedAppProps) {
     const target = loadMoreRef.current;
     if (!target || !nextCursor) return;
     const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) void loadMore(); },
+      ([entry]) => {
+        if (entry.isIntersecting) void loadMore();
+      },
       { rootMargin: "400px 0px" },
     );
     observer.observe(target);
     return () => observer.disconnect();
   }, [loadMore, nextCursor]);
   async function create(data: CreatePostInput) {
-    await api(ENDPOINTS.feed.create, { method: "POST", body: JSON.stringify(data) });
+    await api(ENDPOINTS.feed.create, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
     await load();
   }
   async function like(id: string) {
@@ -125,9 +141,49 @@ export default function App({ user }: FeedAppProps) {
     await api(ENDPOINTS.feed.likeComment(id), { method: "POST" });
     await load();
   }
+  async function loadComments(postId: string) {
+    const cursor = commentCursors[postId];
+    const page = await api<Page<Comment>>(ENDPOINTS.feed.commentsPage(postId, cursor ?? undefined));
+    const comments = page.items.flatMap((comment) => [
+      adaptComment(comment),
+      ...comment.replies.map((reply) => adaptComment(reply, comment.id)),
+    ]);
+    setPosts((current) =>
+      current.map((post) =>
+        post.id === postId
+          ? {
+              ...post,
+              comments: cursor === undefined ? comments : [...post.comments, ...comments],
+              previousCommentCount: page.nextCursor ? Math.max(0, post.previousCommentCount - (cursor === undefined ? Math.max(0, page.items.length - 3) : page.items.length)) : 0,
+            }
+          : post,
+      ),
+    );
+    setCommentCursors((current) => ({ ...current, [postId]: page.nextCursor }));
+  }
+  async function loadPostLikers(postId: string, cursor?: string) {
+    return api<Page<Person>>(ENDPOINTS.feed.postLikers(postId, cursor));
+  }
+  async function loadCommentLikers(commentId: string, cursor?: string) {
+    return api<Page<Person>>(ENDPOINTS.feed.commentLikers(commentId, cursor));
+  }
+  async function loadReplies(postId: string, commentId: string) {
+    const cursor = replyCursors[commentId];
+    const page = await api<Page<Comment>>(ENDPOINTS.feed.replies(commentId, cursor ?? undefined));
+    const replies = page.items.map((reply) => adaptComment(reply, commentId));
+    setPosts((current) => current.map((post) => {
+      if (post.id !== postId) return post;
+      const comments = cursor === undefined ? post.comments.filter((item) => item.parentId !== commentId) : [...post.comments];
+      const parentIndex = comments.findIndex((item) => item.id === commentId);
+      const insertAt = comments.reduce((last, item, index) => item.parentId === commentId ? index + 1 : last, parentIndex + 1);
+      comments.splice(insertAt, 0, ...replies);
+      return { ...post, comments };
+    }));
+    setReplyCursors((current) => ({ ...current, [commentId]: page.nextCursor }));
+  }
   async function logout() {
-    await api(ENDPOINTS.auth.logout, { method: 'POST' });
-    router.replace('/login');
+    await api(ENDPOINTS.auth.logout, { method: "POST" });
+    router.replace("/login");
     router.refresh();
   }
   return (
@@ -160,6 +216,10 @@ export default function App({ user }: FeedAppProps) {
                         onLikeToggle={like}
                         onAddComment={comment}
                         onLikeComment={likeComment}
+                        onLoadComments={loadComments}
+                        onLoadPostLikers={loadPostLikers}
+                        onLoadCommentLikers={loadCommentLikers}
+                        onLoadReplies={loadReplies}
                         eager={index === 0}
                       />
                     ))}
@@ -169,7 +229,11 @@ export default function App({ user }: FeedAppProps) {
                         role="status"
                         aria-live="polite"
                         className="_mar_b24"
-                        style={{ minHeight: 48, textAlign: "center", color: "#65676b" }}
+                        style={{
+                          minHeight: 48,
+                          textAlign: "center",
+                          color: "#65676b",
+                        }}
                       >
                         {loadingMore ? "Loading more posts…" : ""}
                       </div>

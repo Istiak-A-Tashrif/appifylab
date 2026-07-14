@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import DesignImage from './DesignImage';
+import DesignImage from "./DesignImage";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api } from "../utils/api";
@@ -27,19 +27,22 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
     setBusy(true);
     setError("");
     try {
-      await api<User>(registration ? ENDPOINTS.auth.register : ENDPOINTS.auth.login, {
-        method: "POST",
-        body: JSON.stringify(
-          registration
-            ? {
-                firstName: values.firstName,
-                lastName: values.lastName,
-                email: values.email,
-                password: values.password,
-              }
-            : { email: values.email, password: values.password },
-        ),
-      });
+      await api<User>(
+        registration ? ENDPOINTS.auth.register : ENDPOINTS.auth.login,
+        {
+          method: "POST",
+          body: JSON.stringify(
+            registration
+              ? {
+                  firstName: values.firstName,
+                  lastName: values.lastName,
+                  email: values.email,
+                  password: values.password,
+                }
+              : { email: values.email, password: values.password },
+          ),
+        },
+      );
       router.replace("/feed");
     } catch (cause) {
       setError((cause as Error).message);
@@ -52,7 +55,11 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
     <section className={`${prefix}_wrapper _layout_main_wrapper`}>
       <div className="_shape_one">
         <DesignImage src={`${A}shape1.svg`} alt="" className="_shape_img" />
-        <DesignImage src={`${A}dark_shape.svg`} alt="" className="_dark_shape" />
+        <DesignImage
+          src={`${A}dark_shape.svg`}
+          alt=""
+          className="_dark_shape"
+        />
       </div>
       <div className="_shape_two">
         <DesignImage src={`${A}shape2.svg`} alt="" className="_shape_img" />
@@ -263,8 +270,9 @@ function Field({
   return (
     <div className="col-xl-12 col-lg-12 col-md-12 col-sm-12">
       <div className={`${prefix}_form_input _mar_b14`}>
-        <label className={`${prefix}_label _mar_b8`}>{label}</label>
+        <label htmlFor={`${prefix}_${name}`} className={`${prefix}_label _mar_b8`}>{label}</label>
         <input
+          id={`${prefix}_${name}`}
           name={name}
           type={type}
           required

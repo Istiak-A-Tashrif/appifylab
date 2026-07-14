@@ -10,6 +10,7 @@ import {
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AuthGuard } from "@nestjs/passport";
+import { Throttle } from "@nestjs/throttler";
 import { Request, Response } from "express";
 import { AuthService } from "./auth.service";
 import { LoginDto, RegisterDto } from "./auth.dto";
@@ -58,6 +59,7 @@ export class AuthController {
   }
 
   @HttpCode(200)
+  @Throttle({ default: { limit: 5, ttl: 60_000, blockDuration: 60_000 } })
   @Post("login")
   async login(
     @Body() dto: LoginDto,

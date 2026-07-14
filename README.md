@@ -8,8 +8,9 @@ A full-stack implementation of the supplied Appifylab selection task. The fronte
 - Protected feed with newest posts first and cursor-based infinite scrolling
 - Text/image posts with public or author-only visibility
 - Comments, one-level replies, and like/unlike on every content type
+- Cursor-paginated comments, replies, and liker lists with bounded feed previews
 - Liker names exposed by clicking or hovering over like counts
-- Input validation, client-side upload type/size checks, per-request nonce-based CSP, Helmet headers, CORS restrictions, Prisma exception mapping, and rate limiting
+- Input validation, Cloudinary-account URL enforcement, per-request nonce-based CSP, Helmet headers, CORS restrictions, Prisma exception mapping, global rate limiting, and stricter login throttling
 - Compound database keys prevent duplicate likes; feed and relationship indexes support high read volume
 
 ## Run locally
@@ -37,6 +38,8 @@ The NestJS/Prisma bootstrapping pattern was reused from the adjacent `PosClient`
 
 Comments use a self-relation for replies and intentionally allow one reply level, matching the scope of the task while avoiding unbounded recursive reads. Likes use separate join tables for clear foreign keys and efficient liker queries. Images upload directly to Cloudinary using the configured unsigned upload preset, and only the resulting HTTPS URL is stored by the API.
 
+The main feed returns counts and small, bounded interaction previews. Full comment, reply, and liker collections use separate cursor-paginated endpoints so a highly active post cannot make the feed response grow without limit.
+
 The browser rejects unsupported image types and files larger than 5 MB. Configure equivalent format, size, and destination restrictions on the unsigned Cloudinary preset before production deployment; browser validation alone is not a security boundary.
 
 ## Verification
@@ -46,7 +49,9 @@ cd backend && npx prisma generate && npm run build
 cd frontend && npm run build
 ```
 
-Run the backend unit tests with `cd backend && npm test`. They cover feed visibility/order queries, cursor pagination, liker state, private-post authorization, reply-depth validation, and like toggling.
+Run the backend tests with `cd backend && npm test`. The 12 tests cover authentication normalization, password handling, refresh rotation/replay rejection, feed visibility and ordering, bounded previews, cursor pagination, Cloudinary URL enforcement, private-post authorization, reply-depth validation, and like toggling.
+
+With PostgreSQL running, execute the Chromium user journey with `cd frontend && npm run test:e2e`. It verifies protected redirects, registration, post creation, liking, commenting, inline replies, logout, and post-logout route protection.
 
 Both production builds and all tests pass. Before deployment, set long random and distinct `JWT_SECRET` and `JWT_REFRESH_SECRET` values, use TLS, configure the production frontend origin and Cloudinary preset restrictions, and run `npx prisma migrate deploy`.
 

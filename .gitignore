@@ -3,6 +3,8 @@ node_modules
 .next
 dist
 *.tsbuildinfo
+playwright-report
+test-results
 .env
 Selection Task for Full Stack Engineer at Appifylab.pdf
 Selection Task for Full Stack Engineer at Appifylab/
