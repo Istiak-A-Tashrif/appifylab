@@ -130,8 +130,13 @@ describe("FeedService", () => {
   });
 
   it("rejects image URLs outside the configured Cloudinary account", async () => {
-    await expect(service.create(user.id, { text: "post", visibility: Visibility.PUBLIC, imageUrl: "https://evil.example/image.png" }))
-      .rejects.toThrow("configured Cloudinary account");
+    await expect(
+      service.create(user.id, {
+        text: "post",
+        visibility: Visibility.PUBLIC,
+        imageUrl: "https://evil.example/image.png",
+      }),
+    ).rejects.toThrow("configured Cloudinary account");
     expect(prisma.post.create).not.toHaveBeenCalled();
   });
 
@@ -142,5 +147,41 @@ describe("FeedService", () => {
     expect(query.include.likes.take).toBe(3);
     expect(query.include.comments.take).toBe(3);
     expect(query.include.comments.include.replies.take).toBe(2);
+  });
+
+  it("presents the current user's reply-like state independently", async () => {
+    prisma.post.findMany.mockResolvedValue([
+      {
+        id: "post-1",
+        author: other,
+        likes: [],
+        _count: { likes: 0, comments: 1 },
+        comments: [
+          {
+            id: "comment-1",
+            author: other,
+            likes: [],
+            _count: { likes: 0, replies: 1 },
+            replies: [
+              {
+                id: "reply-1",
+                author: other,
+                likes: [{ user }],
+                _count: { likes: 1, replies: 0 },
+                replies: [],
+              },
+            ],
+          },
+        ],
+      },
+    ]);
+    prisma.commentLike.findMany.mockResolvedValue([{ commentId: "reply-1" }]);
+    const page = await service.list(user.id);
+    expect(page.items[0].comments[0].likedByMe).toBe(false);
+    expect(page.items[0].comments[0].replies[0]).toMatchObject({
+      id: "reply-1",
+      likedByMe: true,
+      likeCount: 1,
+    });
   });
 });

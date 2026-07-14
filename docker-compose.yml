@@ -1,10 +1,11 @@
 services:
   postgres:
     image: postgres:17-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_DB: appify_feed
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     ports:
       - "5432:5432"
     volumes:
@@ -13,6 +14,92 @@ services:
       test: ["CMD-SHELL", "pg_isready -U postgres -d appify_feed"]
       interval: 5s
       timeout: 5s
-      retries: 10
+      retries: 15
+
+  backend:
+    profiles: ["prod"]
+    build:
+      context: ./backend
+      target: production
+    restart: unless-stopped
+    environment: &backend-environment
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/appify_feed?schema=public
+      JWT_SECRET: ${JWT_SECRET:-change-this-production-access-secret}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change-this-production-refresh-secret}
+      CSRF_SECRET: ${CSRF_SECRET:-change-this-production-csrf-secret}
+      CLOUDINARY_CLOUD_NAME: ${NEXT_PUBLIC_CLOUD_NAME:-ddluuftiq}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/auth/csrf-token >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  frontend:
+    profiles: ["prod"]
+    build:
+      context: ./frontend
+      target: production
+      args: &frontend-build-args
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3000}
+        NEXT_PUBLIC_CLOUD_NAME: ${NEXT_PUBLIC_CLOUD_NAME:-ddluuftiq}
+        NEXT_PUBLIC_UPLOAD_PRESET: ${NEXT_PUBLIC_UPLOAD_PRESET:-test-preset}
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3000}
+      NEXT_PUBLIC_CLOUD_NAME: ${NEXT_PUBLIC_CLOUD_NAME:-ddluuftiq}
+      NEXT_PUBLIC_UPLOAD_PRESET: ${NEXT_PUBLIC_UPLOAD_PRESET:-test-preset}
+    ports:
+      - "5173:5173"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5173/login >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  backend-dev:
+    profiles: ["dev"]
+    build:
+      context: ./backend
+      target: development
+    environment: *backend-environment
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend:/app
+      - backend_node_modules:/app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend-dev:
+    profiles: ["dev"]
+    build:
+      context: ./frontend
+      target: development
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3000}
+      NEXT_PUBLIC_CLOUD_NAME: ${NEXT_PUBLIC_CLOUD_NAME:-ddluuftiq}
+      NEXT_PUBLIC_UPLOAD_PRESET: ${NEXT_PUBLIC_UPLOAD_PRESET:-test-preset}
+      WATCHPACK_POLLING: "true"
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    depends_on:
+      - backend-dev
+
 volumes:
   appify_postgres:
+  backend_node_modules:
+  frontend_node_modules:
