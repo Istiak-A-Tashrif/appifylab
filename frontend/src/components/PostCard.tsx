@@ -403,7 +403,10 @@ export default function PostCard({
                           type="button"
                           className="_comment_action"
                           onClick={() => {
-                            setReplyingTo(comment.parentId || comment.id);
+                            // Track the exact row that opened the composer. A
+                            // reply still targets its top-level parent, but
+                            // sibling replies must not share the same UI state.
+                            setReplyingTo(comment.id);
                             setReplyDraft("");
                           }}
                         >
@@ -419,7 +422,7 @@ export default function PostCard({
                     </ul>
                   </div>
                 </div>
-                {replyingTo === (comment.parentId || comment.id) && (
+                {replyingTo === comment.id && (
                   <form
                     className="_inline_reply"
                     onSubmit={(event) =>
