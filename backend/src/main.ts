@@ -24,7 +24,7 @@ async function bootstrap() {
     config.get<string>("CSRF_SECRET") ??
     config.getOrThrow<string>("JWT_REFRESH_SECRET");
   app.disable("x-powered-by");
-  app.setGlobalPrefix("api");
+  app.setGlobalPrefix("api/v1");
   app.use(
     helmet({
       contentSecurityPolicy: {
@@ -78,7 +78,7 @@ async function bootstrap() {
   app.enableShutdownHooks();
   const port = config.get("PORT", 3000);
   await app.listen(port);
-  logger.log(`Application running at ${await app.getUrl()}/api`);
+  logger.log(`Application running at ${await app.getUrl()}/api/v1`);
   logger.log(`Environment: ${config.get("NODE_ENV", "development")}`);
 }
 void bootstrap();

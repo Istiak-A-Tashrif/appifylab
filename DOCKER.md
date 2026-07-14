@@ -17,6 +17,11 @@ For hot-reload development containers:
 ./setup.sh dev
 ```
 
+The profiles use separate host ports and may run at the same time:
+
+- Production: frontend `5173`, API `3000` (`/api/v1`)
+- Development: frontend `5174`, API `3001` (`/api/v1`)
+
 ## Direct Compose commands
 
 ```bash

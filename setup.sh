@@ -47,6 +47,8 @@ grep -q '^JWT_REFRESH_SECRET=' .env || update_env JWT_REFRESH_SECRET "$(random_s
 grep -q '^CSRF_SECRET=' .env || update_env CSRF_SECRET "$(random_secret)"
 grep -q '^FRONTEND_URL=' .env || update_env FRONTEND_URL "http://localhost:5173"
 grep -q '^NEXT_PUBLIC_API_URL=' .env || update_env NEXT_PUBLIC_API_URL "http://localhost:3000"
+grep -q '^DEV_FRONTEND_URL=' .env || update_env DEV_FRONTEND_URL "http://localhost:5174"
+grep -q '^DEV_API_URL=' .env || update_env DEV_API_URL "http://localhost:3001"
 grep -q '^NEXT_PUBLIC_CLOUD_NAME=' .env || update_env NEXT_PUBLIC_CLOUD_NAME "ddluuftiq"
 grep -q '^NEXT_PUBLIC_UPLOAD_PRESET=' .env || update_env NEXT_PUBLIC_UPLOAD_PRESET "test-preset"
 
@@ -55,6 +57,11 @@ docker compose --profile "$PROFILE" up --build -d
 docker compose --profile "$PROFILE" ps
 
 echo
-echo "Frontend: http://localhost:5173"
-echo "API:      http://localhost:3000/api"
+if [[ "$PROFILE" == "dev" ]]; then
+  echo "Frontend: http://localhost:5174"
+  echo "API:      http://localhost:3001/api/v1"
+else
+  echo "Frontend: http://localhost:5173"
+  echo "API:      http://localhost:3000/api/v1"
+fi
 echo "Stop:     docker compose --profile ${PROFILE} down"

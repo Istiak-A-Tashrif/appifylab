@@ -8,14 +8,14 @@ export default defineConfig({
   use: { baseURL: "http://localhost:5173", trace: "on-first-retry" },
   webServer: [
     {
-      command: "npm run start:dev",
+      command: "npm run build && npm run start:prod",
       cwd: "../backend",
-      url: "http://localhost:3000/api/auth/csrf-token",
+      url: "http://localhost:3000/api/v1/auth/csrf-token",
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
     },
     {
-      command: "npm run dev",
+      command: "npm run build && npm run start",
       cwd: ".",
       url: "http://localhost:5173/login",
       reuseExistingServer: !process.env.CI,

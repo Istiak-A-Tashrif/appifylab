@@ -1,19 +1,20 @@
 import { ENDPOINTS } from './endpoints';
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+const API_BASE_URL = `${API_URL}/api/v1`;
 let csrfToken: string | null = null;
 let endingSession: Promise<void> | null = null;
 
 async function request(path: string, init?: RequestInit) {
   const method = (init?.method ?? 'GET').toUpperCase();
   if (!['GET', 'HEAD', 'OPTIONS'].includes(method) && path !== ENDPOINTS.auth.csrf) {
-    csrfToken ??= await fetch(`${API_URL}/api${ENDPOINTS.auth.csrf}`, { credentials: 'include' })
+    csrfToken ??= await fetch(`${API_BASE_URL}${ENDPOINTS.auth.csrf}`, { credentials: 'include' })
       .then(async (response) => {
         if (!response.ok) throw new Error('Could not initialize request security');
         return (await response.json() as { csrfToken: string }).csrfToken;
       });
   }
-  return fetch(`${API_URL}/api${path}`, {
+  return fetch(`${API_BASE_URL}${path}`, {
     credentials: 'include',
     ...init,
     headers: init?.body instanceof FormData
