@@ -23,10 +23,11 @@ export class AuthController {
   ) {}
 
   private cookieOptions(maxAge: number) {
+    const production = this.config.get("NODE_ENV") === "production";
     return {
       httpOnly: true,
-      sameSite: "lax" as const,
-      secure: this.config.get("NODE_ENV") === "production",
+      sameSite: production ? ("none" as const) : ("lax" as const),
+      secure: production,
       maxAge,
       path: "/",
     };

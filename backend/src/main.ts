@@ -51,7 +51,10 @@ async function bootstrap() {
       const token = randomBytes(32).toString("base64url");
       res.cookie(CSRF_COOKIE, signCsrf(token, csrfSecret), {
         httpOnly: true,
-        sameSite: "lax",
+        // The frontend and API are separate origins on hosted environments
+        // (for example, two *.onrender.com services). Cross-site fetches only
+        // include cookies when SameSite=None is paired with Secure.
+        sameSite: production ? "none" : "lax",
         secure: production,
         path: "/",
       });
