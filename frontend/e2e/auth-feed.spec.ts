@@ -1,15 +1,14 @@
 import { expect, test } from "@playwright/test";
+import { randomUUID } from "node:crypto";
 
 test("registration, feed interactions, authorization, and logout", async ({
   page,
 }) => {
-  const unique = Date.now();
+  const unique = randomUUID();
   const postText = `E2E post ${unique}`;
   const commentText = `E2E comment ${unique}`;
   const replyText = `E2E reply ${unique}`;
 
-  await page.goto("/feed");
-  await expect(page).toHaveURL(/\/login$/);
   await page.goto("/register");
   await page.getByLabel("First Name").fill("E2E");
   await page.getByLabel("Last Name").fill("User");

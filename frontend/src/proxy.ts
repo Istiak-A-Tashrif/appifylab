@@ -71,6 +71,11 @@ export async function proxy(request: NextRequest) {
 
   if (path.startsWith("/feed") && !user) {
     response = NextResponse.redirect(new URL("/login", request.url));
+    // A failed session lookup means any authentication cookies presented by
+    // the browser are stale or invalid. Expire them on the redirect so later
+    // requests do not repeatedly attempt the same invalid session.
+    response.cookies.delete("access_token");
+    response.cookies.delete("refresh_token");
   } else if ((path === "/login" || path === "/register") && user) {
     response = NextResponse.redirect(new URL("/feed", request.url));
   } else {
