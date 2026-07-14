@@ -91,4 +91,9 @@ export class AuthController {
   ) {
     return req.user;
   }
+
+  @Get("csrf-token")
+  csrfToken(@Req() req: Request & { csrfToken: () => string }) {
+    return { csrfToken: req.csrfToken() };
+  }
 }

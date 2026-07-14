@@ -1,18 +1,32 @@
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+import { ENDPOINTS } from './endpoints';
 
-function request(path: string, init?: RequestInit) {
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+let csrfToken: string | null = null;
+
+async function request(path: string, init?: RequestInit) {
+  const method = (init?.method ?? 'GET').toUpperCase();
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(method) && path !== ENDPOINTS.auth.csrf) {
+    csrfToken ??= await fetch(`${API_URL}/api${ENDPOINTS.auth.csrf}`, { credentials: 'include' })
+      .then(async (response) => {
+        if (!response.ok) throw new Error('Could not initialize request security');
+        return (await response.json() as { csrfToken: string }).csrfToken;
+      });
+  }
   return fetch(`${API_URL}/api${path}`, {
     credentials: 'include',
     ...init,
-    headers: init?.body instanceof FormData ? init.headers : { 'Content-Type': 'application/json', ...init?.headers },
+    headers: init?.body instanceof FormData
+      ? { ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}), ...init.headers }
+      : { 'Content-Type': 'application/json', ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}), ...init?.headers },
   });
 }
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   let response = await request(path, init);
-  const canRefresh = response.status === 401 && !['/auth/login', '/auth/register', '/auth/refresh'].includes(path);
+  const noRefreshEndpoints: readonly string[] = [ENDPOINTS.auth.login, ENDPOINTS.auth.register, ENDPOINTS.auth.refresh];
+  const canRefresh = response.status === 401 && !noRefreshEndpoints.includes(path);
   if (canRefresh) {
-    const refreshed = await request('/auth/refresh', { method: 'POST' });
+    const refreshed = await request(ENDPOINTS.auth.refresh, { method: 'POST' });
     if (refreshed.ok) response = await request(path, init);
   }
   if (response.status === 204) return undefined as T;

@@ -5,6 +5,7 @@ import DesignImage from './DesignImage';
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api } from "../utils/api";
+import { ENDPOINTS } from "../utils/endpoints";
 import type { User } from "../types";
 
 const A = "/assets/images/";
@@ -26,7 +27,7 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
     setBusy(true);
     setError("");
     try {
-      await api<User>(`/auth/${mode}`, {
+      await api<User>(registration ? ENDPOINTS.auth.register : ENDPOINTS.auth.login, {
         method: "POST",
         body: JSON.stringify(
           registration

@@ -11,6 +11,7 @@ import PostCard from "./PostCard";
 import RightSidebar from "./RightSidebar";
 import ThemeSwitch from "./ThemeSwitch";
 import { api, imageUrl } from "../utils/api";
+import { ENDPOINTS } from "../utils/endpoints";
 import type { Post } from '../types';
 import type { CreatePostInput, FeedAppProps, FeedResponse, ViewPost } from '../types/feed';
 const avatar = "/assets/images/post_img.png";
@@ -73,7 +74,7 @@ export default function App({ user }: FeedAppProps) {
     [error, setError] = useState("");
   const load = useCallback(
     () =>
-      api<FeedResponse>("/feed")
+      api<FeedResponse>(ENDPOINTS.feed.list())
         .then((x) => { setPosts(x.items.map(adapt)); setNextCursor(x.nextCursor); })
         .catch((e) => setError(e.message)),
     [],
@@ -86,7 +87,7 @@ export default function App({ user }: FeedAppProps) {
     setLoadingMore(true);
     setError("");
     try {
-      const page = await api<FeedResponse>(`/feed?cursor=${encodeURIComponent(nextCursor)}`);
+      const page = await api<FeedResponse>(ENDPOINTS.feed.list(nextCursor));
       setPosts((current) => [...current, ...page.items.map(adapt)]);
       setNextCursor(page.nextCursor);
     } catch (e) {
@@ -106,26 +107,26 @@ export default function App({ user }: FeedAppProps) {
     return () => observer.disconnect();
   }, [loadMore, nextCursor]);
   async function create(data: CreatePostInput) {
-    await api("/feed", { method: "POST", body: JSON.stringify(data) });
+    await api(ENDPOINTS.feed.create, { method: "POST", body: JSON.stringify(data) });
     await load();
   }
   async function like(id: string) {
-    await api(`/feed/${id}/like`, { method: "POST" });
+    await api(ENDPOINTS.feed.likePost(id), { method: "POST" });
     await load();
   }
   async function comment(id: string, text: string, parentId?: string) {
-    await api(`/feed/${id}/comments`, {
+    await api(ENDPOINTS.feed.comments(id), {
       method: "POST",
       body: JSON.stringify({ body: text, parentId }),
     });
     await load();
   }
   async function likeComment(id: string) {
-    await api(`/feed/comments/${id}/like`, { method: "POST" });
+    await api(ENDPOINTS.feed.likeComment(id), { method: "POST" });
     await load();
   }
   async function logout() {
-    await api('/auth/logout', { method: 'POST' });
+    await api(ENDPOINTS.auth.logout, { method: 'POST' });
     router.replace('/login');
     router.refresh();
   }

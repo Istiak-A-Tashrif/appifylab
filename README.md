@@ -4,12 +4,12 @@ A full-stack implementation of the supplied Appifylab selection task. The fronte
 
 ## Features
 
-- Registration and login with bcrypt password hashing, 15-minute access tokens, and rotating 7-day refresh tokens in HTTP-only cookies
+- Registration and login with bcrypt password hashing, 15-minute access tokens, rotating 7-day refresh tokens in HTTP-only cookies, and signed double-submit CSRF protection
 - Protected feed with newest posts first and cursor-based infinite scrolling
 - Text/image posts with public or author-only visibility
 - Comments, one-level replies, and like/unlike on every content type
 - Liker names exposed by clicking or hovering over like counts
-- Input validation, client-side upload type/size checks, Helmet headers, CORS restrictions, and rate limiting
+- Input validation, client-side upload type/size checks, Helmet headers, CORS restrictions, Prisma exception mapping, and rate limiting
 - Compound database keys prevent duplicate likes; feed and relationship indexes support high read volume
 
 ## Run locally
