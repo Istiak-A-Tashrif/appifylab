@@ -86,6 +86,19 @@ export class AuthService {
     }
   }
 
+  async session(refreshToken: string) {
+    const payload = await this.verifyRefresh(refreshToken);
+    const user = await this.prisma.user.findFirst({
+      where: {
+        id: payload.sub,
+        refreshTokenHash: this.tokenHash(refreshToken),
+      },
+      select: { id: true, email: true, firstName: true, lastName: true },
+    });
+    if (!user) throw new UnauthorizedException("Invalid refresh token");
+    return user;
+  }
+
   private async issueTokens(userId: string): Promise<TokenPair> {
     const tokens = await this.createTokens(userId);
     await this.prisma.user.update({

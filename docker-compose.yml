@@ -48,11 +48,13 @@ services:
       target: production
       args: &frontend-build-args
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3000}
+        API_PROXY_TARGET: http://backend:3000
         NEXT_PUBLIC_CLOUD_NAME: ${NEXT_PUBLIC_CLOUD_NAME:-ddluuftiq}
         NEXT_PUBLIC_UPLOAD_PRESET: ${NEXT_PUBLIC_UPLOAD_PRESET:-test-preset}
     restart: unless-stopped
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3000}
+      API_PROXY_TARGET: http://backend:3000
       NEXT_PUBLIC_CLOUD_NAME: ${NEXT_PUBLIC_CLOUD_NAME:-ddluuftiq}
       NEXT_PUBLIC_UPLOAD_PRESET: ${NEXT_PUBLIC_UPLOAD_PRESET:-test-preset}
     ports:
@@ -93,6 +95,7 @@ services:
       target: development
     environment:
       NEXT_PUBLIC_API_URL: ${DEV_API_URL:-http://localhost:3001}
+      API_PROXY_TARGET: http://backend-dev:3000
       NEXT_PUBLIC_CLOUD_NAME: ${NEXT_PUBLIC_CLOUD_NAME:-ddluuftiq}
       NEXT_PUBLIC_UPLOAD_PRESET: ${NEXT_PUBLIC_UPLOAD_PRESET:-test-preset}
       WATCHPACK_POLLING: "true"

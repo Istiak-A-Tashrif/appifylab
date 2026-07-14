@@ -26,25 +26,60 @@ function contentSecurityPolicy(nonce: string) {
   ].join("; ");
 }
 
-export function proxy(request: NextRequest) {
+type SessionUser = {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+};
+
+async function currentUser(request: NextRequest): Promise<SessionUser | null> {
+  const target = (process.env.API_PROXY_TARGET || "http://localhost:3000").replace(/\/$/, "");
+  try {
+    const options = {
+      headers: { cookie: request.headers.get("cookie") || "" },
+      cache: "no-store" as const,
+    };
+    let response = await fetch(`${target}/api/v1/auth/me`, options);
+    // A valid refresh session still protects navigation when the short-lived
+    // access token has expired. The browser API client rotates it on its next
+    // protected API request.
+    if (!response.ok && request.cookies.has("refresh_token")) {
+      response = await fetch(`${target}/api/v1/auth/session`, options);
+    }
+    return response.ok ? ((await response.json()) as SessionUser) : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function proxy(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
   const csp = contentSecurityPolicy(nonce);
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
   requestHeaders.set("Content-Security-Policy", csp);
 
-  const hasSession = Boolean(
+  const hasCookie = Boolean(
     request.cookies.get("access_token")?.value ||
       request.cookies.get("refresh_token")?.value,
   );
   const path = request.nextUrl.pathname;
+  const authRoute = path.startsWith("/feed") || path === "/login" || path === "/register";
+  const user = authRoute && hasCookie ? await currentUser(request) : null;
   let response: NextResponse;
 
-  if (path.startsWith("/feed") && !hasSession) {
+  if (path.startsWith("/feed") && !user) {
     response = NextResponse.redirect(new URL("/login", request.url));
-  } else if ((path === "/login" || path === "/register") && hasSession) {
+  } else if ((path === "/login" || path === "/register") && user) {
     response = NextResponse.redirect(new URL("/feed", request.url));
   } else {
+    if (user) {
+      requestHeaders.set(
+        "x-auth-user",
+        Buffer.from(JSON.stringify(user)).toString("base64url"),
+      );
+    }
     response = NextResponse.next({ request: { headers: requestHeaders } });
   }
 

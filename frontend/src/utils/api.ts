@@ -1,7 +1,9 @@
 import { ENDPOINTS } from './endpoints';
 
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-const API_BASE_URL = `${API_URL}/api/v1`;
+// API requests stay on the frontend origin and are forwarded to the backend by
+// the Next.js rewrite. This also makes authentication cookies visible to the
+// frontend route proxy.
+const API_BASE_URL = '/api/v1';
 let csrfToken: string | null = null;
 let endingSession: Promise<void> | null = null;
 
@@ -56,4 +58,4 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   return data as T;
 }
 
-export const imageUrl = (path?: string) => path ? (/^https:\/\//.test(path) ? path : `${API_URL}${path}`) : undefined;
+export const imageUrl = (path?: string) => path || undefined;

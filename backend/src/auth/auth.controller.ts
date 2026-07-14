@@ -26,7 +26,7 @@ export class AuthController {
     const production = this.config.get("NODE_ENV") === "production";
     return {
       httpOnly: true,
-      sameSite: production ? ("none" as const) : ("lax" as const),
+      sameSite: "lax" as const,
       secure: production,
       maxAge,
       path: "/",
@@ -93,6 +93,11 @@ export class AuthController {
     @Req() req: Request & { user: unknown },
   ) {
     return req.user;
+  }
+
+  @Get("session")
+  session(@Req() req: Request) {
+    return this.auth.session(req.cookies?.refresh_token ?? "");
   }
 
   @Get("csrf-token")
