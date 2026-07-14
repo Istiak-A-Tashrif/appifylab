@@ -98,6 +98,24 @@ export default function PostCard({
     setCommentLikerNames(names(page.items));
     setCommentLikerCursor(page.nextCursor);
   }
+  async function togglePostLike() {
+    await onLikeToggle(post.id);
+    if (!postLikersOpen) return;
+
+    const page = await onLoadPostLikers(post.id);
+    setPostLikerNames(names(page.items));
+    setPostLikerCursor(page.nextCursor);
+    if (page.items.length === 0) setPostLikersOpen(false);
+  }
+  async function toggleCommentLike(commentId: string) {
+    await onLikeComment(commentId);
+    if (commentLikersOpen !== commentId) return;
+
+    const page = await onLoadCommentLikers(commentId);
+    setCommentLikerNames(names(page.items));
+    setCommentLikerCursor(page.nextCursor);
+    if (page.items.length === 0) setCommentLikersOpen(null);
+  }
 
   return (
     <div className="_feed_inner_timeline_post_area _b_radious6 _padd_b24 _padd_t24 _mar_b16">
@@ -231,7 +249,7 @@ export default function PostCard({
             "_feed_inner_timeline_reaction_emoji _feed_reaction" +
             (post.liked ? " _feed_reaction_active" : "")
           }
-          onClick={() => onLikeToggle(post.id)}
+          onClick={() => void togglePostLike()}
         >
           <span className="_feed_inner_timeline_reaction_link">
             <span>
@@ -393,7 +411,7 @@ export default function PostCard({
                         <span
                           role="button"
                           tabIndex={0}
-                          onClick={() => onLikeComment(comment.id)}
+                          onClick={() => void toggleCommentLike(comment.id)}
                         >
                           {comment.liked ? "Unlike." : "Like."}
                         </span>
