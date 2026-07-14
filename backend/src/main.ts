@@ -20,18 +20,22 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const config = app.get(ConfigService);
   const production = config.get("NODE_ENV") === "production";
-  const csrfSecret = config.get<string>("CSRF_SECRET") ?? config.getOrThrow<string>("JWT_REFRESH_SECRET");
+  const csrfSecret =
+    config.get<string>("CSRF_SECRET") ??
+    config.getOrThrow<string>("JWT_REFRESH_SECRET");
   app.disable("x-powered-by");
   app.setGlobalPrefix("api");
-  app.use(helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'none'"],
-        frameAncestors: ["'none'"],
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'none'"],
+          frameAncestors: ["'none'"],
+        },
       },
-    },
-    crossOriginResourcePolicy: { policy: "cross-origin" },
-  }));
+      crossOriginResourcePolicy: { policy: "cross-origin" },
+    }),
+  );
   app.enableCors({
     origin: config.get("FRONTEND_URL", "http://localhost:5173"),
     credentials: true,
@@ -55,7 +59,8 @@ async function bootstrap() {
     if (SAFE_METHODS.has(req.method)) return next();
     const token = req.get(CSRF_HEADER);
     const signature = req.cookies?.[CSRF_COOKIE];
-    if (!token || !signature) return res.status(403).json({ message: "Invalid CSRF token" });
+    if (!token || !signature)
+      return res.status(403).json({ message: "Invalid CSRF token" });
     const expected = Buffer.from(signCsrf(token, csrfSecret));
     const actual = Buffer.from(String(signature));
     if (expected.length !== actual.length || !timingSafeEqual(expected, actual))
