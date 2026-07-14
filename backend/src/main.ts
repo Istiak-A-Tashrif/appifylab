@@ -1,4 +1,4 @@
-import { Logger, ValidationPipe } from "@nestjs/common";
+import { Logger, ValidationPipe, VersioningType } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { NestExpressApplication } from "@nestjs/platform-express";
 import { ConfigService } from "@nestjs/config";
@@ -24,7 +24,8 @@ async function bootstrap() {
     config.get<string>("CSRF_SECRET") ??
     config.getOrThrow<string>("JWT_REFRESH_SECRET");
   app.disable("x-powered-by");
-  app.setGlobalPrefix("api/v1");
+  app.setGlobalPrefix("api");
+  app.enableVersioning({ type: VersioningType.URI });
   app.use(
     helmet({
       contentSecurityPolicy: {

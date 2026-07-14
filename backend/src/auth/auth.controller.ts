@@ -15,7 +15,7 @@ import { Request, Response } from "express";
 import { AuthService } from "./auth.service";
 import { LoginDto, RegisterDto } from "./auth.dto";
 
-@Controller("auth")
+@Controller({ path: "auth", version: "1" })
 export class AuthController {
   constructor(
     private auth: AuthService,

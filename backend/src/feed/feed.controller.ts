@@ -15,7 +15,7 @@ import { FeedService } from "./feed.service";
 
 type CurrentRequest = Request & { user: { id: string } };
 @UseGuards(AuthGuard("jwt"))
-@Controller("feed")
+@Controller({ path: "feed", version: "1" })
 export class FeedController {
   constructor(private feed: FeedService) {}
   @Get() list(@Req() req: CurrentRequest, @Query("cursor") cursor?: string) {
