@@ -129,5 +129,5 @@ The backend unit tests cover registration behavior, duplicate accounts, login pr
 ## Submission links
 
 - GitHub repository: https://github.com/Istiak-A-Tashrif/appifylab
-- Video walkthrough: https://youtu.be/d6_JOwTri-U
+- Video walkthrough: https://youtu.be/MKWk8bbVYuc
 - Live application: https://appifylab-1.onrender.com
