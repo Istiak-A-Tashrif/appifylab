@@ -5,7 +5,7 @@ A full-stack implementation of the supplied Appifylab selection task. The fronte
 ## Features
 
 - Registration and login with bcrypt password hashing, 15-minute access tokens, and rotating 7-day refresh tokens in HTTP-only cookies
-- Protected feed with newest posts first and cursor-based “Load more” pagination
+- Protected feed with newest posts first and cursor-based infinite scrolling
 - Text/image posts with public or author-only visibility
 - Comments, one-level replies, and like/unlike on every content type
 - Liker names exposed by clicking or hovering over like counts

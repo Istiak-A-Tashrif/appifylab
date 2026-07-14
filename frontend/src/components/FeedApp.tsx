@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Header from "./Header";
 import MobileMenu from "./MobileMenu";
@@ -65,6 +65,7 @@ const adapt = (p: Post): ViewPost => ({
 });
 export default function App({ user }: FeedAppProps) {
   const router = useRouter();
+  const loadMoreRef = useRef<HTMLDivElement>(null);
   const [posts, setPosts] = useState<ViewPost[]>([]),
     [nextCursor, setNextCursor] = useState<string | null>(null),
     [loadingMore, setLoadingMore] = useState(false),
@@ -80,6 +81,30 @@ export default function App({ user }: FeedAppProps) {
   useEffect(() => {
     void load();
   }, [load]);
+  const loadMore = useCallback(async () => {
+    if (!nextCursor || loadingMore) return;
+    setLoadingMore(true);
+    setError("");
+    try {
+      const page = await api<FeedResponse>(`/feed?cursor=${encodeURIComponent(nextCursor)}`);
+      setPosts((current) => [...current, ...page.items.map(adapt)]);
+      setNextCursor(page.nextCursor);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [loadingMore, nextCursor]);
+  useEffect(() => {
+    const target = loadMoreRef.current;
+    if (!target || !nextCursor) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) void loadMore(); },
+      { rootMargin: "400px 0px" },
+    );
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [loadMore, nextCursor]);
   async function create(data: CreatePostInput) {
     await api("/feed", { method: "POST", body: JSON.stringify(data) });
     await load();
@@ -98,20 +123,6 @@ export default function App({ user }: FeedAppProps) {
   async function likeComment(id: string) {
     await api(`/feed/comments/${id}/like`, { method: "POST" });
     await load();
-  }
-  async function loadMore() {
-    if (!nextCursor || loadingMore) return;
-    setLoadingMore(true);
-    setError("");
-    try {
-      const page = await api<FeedResponse>(`/feed?cursor=${encodeURIComponent(nextCursor)}`);
-      setPosts((current) => [...current, ...page.items.map(adapt)]);
-      setNextCursor(page.nextCursor);
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setLoadingMore(false);
-    }
   }
   async function logout() {
     await api('/auth/logout', { method: 'POST' });
@@ -152,14 +163,15 @@ export default function App({ user }: FeedAppProps) {
                       />
                     ))}
                     {nextCursor && (
-                      <button
-                        type="button"
-                        className="_feed_inner_text_area_btn_link _mar_b24"
-                        disabled={loadingMore}
-                        onClick={loadMore}
+                      <div
+                        ref={loadMoreRef}
+                        role="status"
+                        aria-live="polite"
+                        className="_mar_b24"
+                        style={{ minHeight: 48, textAlign: "center", color: "#65676b" }}
                       >
-                        {loadingMore ? "Loading…" : "Load more posts"}
-                      </button>
+                        {loadingMore ? "Loading more posts…" : ""}
+                      </div>
                     )}
                   </div>
                 </div>
