@@ -1,62 +1,60 @@
 # Appify Community Feed
 
-A full-stack implementation of the supplied Appifylab selection task. The frontend uses Next.js App Router while the API uses NestJS, Prisma, and PostgreSQL. The visual assets are from the supplied HTML/CSS package.
+This project is a full-stack implementation of the Appifylab selection task. I converted the supplied Login, Registration, and Feed templates into a responsive Next.js application and connected them to a NestJS API backed by PostgreSQL.
 
-## Features
+## What I built
 
-- Registration and login with bcrypt password hashing, 15-minute access tokens, rotating 7-day refresh tokens in HTTP-only cookies, and signed double-submit CSRF protection
-- Protected feed with newest posts first and cursor-based infinite scrolling
-- Text/image posts with public or author-only visibility
-- Comments, one-level replies, and like/unlike on every content type
-- Cursor-paginated comments, replies, and liker lists with bounded feed previews
-- Liker names exposed by clicking or hovering over like counts
-- Input validation, Cloudinary-account URL enforcement, per-request nonce-based CSP, Helmet headers, CORS restrictions, Prisma exception mapping, global rate limiting, and stricter login throttling
-- Compound database keys prevent duplicate likes; feed and relationship indexes support high read volume
+- Registration, login, logout, automatic session refresh, and protected feed routes
+- A newest-first feed with cursor-based infinite scrolling
+- Text and image posts with public or author-only visibility
+- Like/unlike for posts, comments, and replies, including paginated lists of who liked each item
+- Comments and one-level threaded replies
+- Responsive and dark-mode-compatible screens based on the provided HTML/CSS design
+- Unit tests for authentication and feed rules, plus a Playwright end-to-end user journey
+- Docker development and production environments with health checks and persistent PostgreSQL storage
+
+## Technology
+
+- **Frontend:** Next.js 16, React 19, and TypeScript
+- **Backend:** NestJS 11, Prisma, and TypeScript
+- **Database:** PostgreSQL 17
+- **Images:** Direct browser uploads to Cloudinary; the API stores the resulting secure URL
+- **Testing:** Vitest and Playwright
+
+## Key decisions
+
+I used Next.js components while retaining the supplied styles and assets so the implementation stays close to the requested design. NestJS keeps authentication and feed behavior in separate modules, while Prisma provides an explicit relational model and migrations.
+
+Authentication uses short-lived JWT access tokens and rotating refresh tokens in `HttpOnly` cookies. Passwords are hashed with bcrypt, only a SHA-256 hash of the active refresh token is stored, and state-changing requests require a signed CSRF token. The API also applies validation, rate limiting, restricted CORS, Helmet headers, and authorization checks. Private-post access is enforced by the backend for both reads and interactions, rather than relying on the UI.
+
+Posts, comments, replies, and liker lists use cursor pagination instead of offset pagination. The main feed includes only bounded previews (three comments, two replies per comment, and three likers), keeping response sizes predictable as activity grows. Compound primary keys prevent duplicate likes, and database indexes support visibility, author, and newest-first queries.
+
+Replies are intentionally limited to one level. This meets the task requirement while avoiding unbounded recursive queries and keeping the conversation UI simple. Images upload directly to Cloudinary to avoid sending large files through the API; the backend accepts URLs only from the configured Cloudinary account and folder.
 
 ## Run locally
 
-Requirements: Node.js 20+, npm, and Docker.
+Requirements: Docker, Docker Compose v2, and OpenSSL.
 
 ```bash
-docker compose up -d
-cp backend/.env.example backend/.env
-cp frontend/.env.example frontend/.env.local
-cd backend && npm install && npx prisma migrate dev --name init && npm run start:dev
+chmod +x setup.sh
+./setup.sh prod
 ```
 
-In another terminal:
+Open `http://localhost:5173`. The API is available at `http://localhost:3000/api/v1`.
 
-```bash
-cd frontend && npm install && npm run dev
-```
-
-Open `http://localhost:5173`. The API runs at `http://localhost:3000/api`.
-
-## Architecture decisions
-
-The NestJS/Prisma bootstrapping pattern was reused from the adjacent `PosClient` project, but all POS, tenant, billing, inventory, printing, AI, and administration code was excluded. Authentication lives in signed HTTP-only cookies so browser JavaScript cannot read credentials. Refresh tokens rotate atomically, only their SHA-256 hashes are stored, and logout revokes the active refresh session. Private-post authorization is enforced in API queries and mutations, not merely hidden in the frontend.
-
-Comments use a self-relation for replies and intentionally allow one reply level, matching the scope of the task while avoiding unbounded recursive reads. Likes use separate join tables for clear foreign keys and efficient liker queries. Images upload directly to Cloudinary using the configured unsigned upload preset, and only the resulting HTTPS URL is stored by the API.
-
-The main feed returns counts and small, bounded interaction previews. Full comment, reply, and liker collections use separate cursor-paginated endpoints so a highly active post cannot make the feed response grow without limit.
-
-The browser rejects unsupported image types and files larger than 5 MB. Configure equivalent format, size, and destination restrictions on the unsigned Cloudinary preset before production deployment; browser validation alone is not a security boundary.
+For hot-reload development containers, run `./setup.sh dev`; the frontend and API will use ports `5174` and `3001`. See [DOCKER.md](./DOCKER.md) for direct Compose commands and deployment notes.
 
 ## Verification
 
 ```bash
-cd backend && npx prisma generate && npm run build
-cd frontend && npm run build
+cd backend && npm test
+cd frontend && npm run test:e2e
 ```
 
-Run the backend tests with `cd backend && npm test`. The 12 tests cover authentication normalization, password handling, refresh rotation/replay rejection, feed visibility and ordering, bounded previews, cursor pagination, Cloudinary URL enforcement, private-post authorization, reply-depth validation, and like toggling.
-
-With PostgreSQL running, execute the Chromium user journey with `cd frontend && npm run test:e2e`. It verifies protected redirects, registration, post creation, liking, commenting, inline replies, logout, and post-logout route protection.
-
-Both production builds and all tests pass. Before deployment, set long random and distinct `JWT_SECRET` and `JWT_REFRESH_SECRET` values, use TLS, configure the production frontend origin and Cloudinary preset restrictions, and run `npx prisma migrate deploy`.
+Before a public deployment, configure production frontend/API origins and a restricted Cloudinary unsigned preset (images only, maximum 5 MB, and the `appify-feed` folder). The setup script generates local database, JWT, and CSRF secrets automatically.
 
 ## Submission links
 
-- GitHub repository: add after publishing this local repository
-- Video walkthrough: add after uploading the recording to YouTube
-- Live application: optional; add after deployment
+- GitHub repository: _add repository URL_
+- Video walkthrough: _add YouTube URL_
+- Live application: _add deployment URL, if available_
