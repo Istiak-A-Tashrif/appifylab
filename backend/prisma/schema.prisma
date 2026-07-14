@@ -1,0 +1,77 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+  url = env("DATABASE_URL")
+}
+
+enum Visibility {
+  PUBLIC
+  PRIVATE
+}
+
+model User {
+  id String @id @default(cuid())
+  firstName String
+  lastName String
+  email String @unique
+  passwordHash String
+  refreshTokenHash String?
+  createdAt DateTime @default(now())
+  posts Post[]
+  comments Comment[]
+  postLikes PostLike[]
+  commentLikes CommentLike[]
+}
+
+model Post {
+  id String @id @default(cuid())
+  text String @db.Text
+  imageUrl String?
+  visibility Visibility @default(PUBLIC)
+  authorId String
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments Comment[]
+  likes PostLike[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([visibility, createdAt(sort: Desc)])
+  @@index([authorId, createdAt(sort: Desc)])
+}
+
+model Comment {
+  id String @id @default(cuid())
+  body String @db.Text
+  postId String
+  authorId String
+  parentId String?
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent Comment? @relation("Replies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies Comment[] @relation("Replies")
+  likes CommentLike[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([postId, parentId, createdAt])
+}
+
+model PostLike {
+  userId String
+  postId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  @@id([userId, postId])
+  @@index([postId, createdAt])
+}
+
+model CommentLike {
+  userId String
+  commentId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  @@id([userId, commentId])
+  @@index([commentId, createdAt])
+}
