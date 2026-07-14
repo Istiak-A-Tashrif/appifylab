@@ -71,7 +71,11 @@ services:
     build:
       context: ./backend
       target: development
-    environment: *backend-environment
+    environment:
+      <<: *backend-environment
+      CHOKIDAR_USEPOLLING: "true"
+      TSC_WATCHFILE: FixedPollingInterval
+      TSC_WATCHDIRECTORY: FixedPollingInterval
     ports:
       - "3000:3000"
     volumes:
@@ -91,6 +95,9 @@ services:
       NEXT_PUBLIC_CLOUD_NAME: ${NEXT_PUBLIC_CLOUD_NAME:-ddluuftiq}
       NEXT_PUBLIC_UPLOAD_PRESET: ${NEXT_PUBLIC_UPLOAD_PRESET:-test-preset}
       WATCHPACK_POLLING: "true"
+      CHOKIDAR_USEPOLLING: "true"
+      TSC_WATCHFILE: FixedPollingInterval
+      TSC_WATCHDIRECTORY: FixedPollingInterval
     ports:
       - "5173:5173"
     volumes:

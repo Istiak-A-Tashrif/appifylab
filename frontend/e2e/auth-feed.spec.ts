@@ -47,6 +47,12 @@ test("registration, feed interactions, authorization, and logout", async ({
   await card.locator("._inline_reply button[type=submit]").click();
   await expect(card.getByText(replyText)).toBeVisible();
 
+  const reply = card.locator("._comment_main", { hasText: replyText }).first();
+  await reply.getByText("Like.", { exact: true }).click();
+  await expect(reply.getByText("Unlike.", { exact: true })).toBeVisible();
+  await reply.getByText("Unlike.", { exact: true }).click();
+  await expect(reply.getByText("Like.", { exact: true })).toBeVisible();
+
   await page.locator("._header_logout_button:visible").first().click();
   await expect(page).toHaveURL(/\/login$/);
   await page.goto("/feed");

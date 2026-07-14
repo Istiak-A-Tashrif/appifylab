@@ -28,6 +28,13 @@
       ]
     }
   },
+  "watchOptions": {
+    "watchFile": "fixedPollingInterval",
+    "watchDirectory": "fixedPollingInterval",
+    "fallbackPolling": "dynamicPriority",
+    "synchronousWatchDirectory": true,
+    "excludeDirectories": ["**/node_modules", ".next"]
+  },
   "include": [
     "next-env.d.ts",
     "**/*.ts",
