@@ -54,7 +54,7 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
   return (
     <section className={`${prefix}_wrapper _layout_main_wrapper`}>
       <div className="_shape_one">
-        <DesignImage src={`${A}shape1.svg`} alt="" className="_shape_img" />
+        <DesignImage src={`${A}shape1.svg`} alt="" className="_shape_img" loading="eager" />
         <DesignImage
           src={`${A}dark_shape.svg`}
           alt=""
