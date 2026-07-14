@@ -9,7 +9,7 @@ A full-stack implementation of the supplied Appifylab selection task. The fronte
 - Text/image posts with public or author-only visibility
 - Comments, one-level replies, and like/unlike on every content type
 - Liker names exposed by clicking or hovering over like counts
-- Input validation, client-side upload type/size checks, Helmet headers, CORS restrictions, Prisma exception mapping, and rate limiting
+- Input validation, client-side upload type/size checks, per-request nonce-based CSP, Helmet headers, CORS restrictions, Prisma exception mapping, and rate limiting
 - Compound database keys prevent duplicate likes; feed and relationship indexes support high read volume
 
 ## Run locally

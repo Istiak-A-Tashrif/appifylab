@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { connection } from 'next/server';
 import { Poppins } from 'next/font/google';
 import '../styles/bootstrap.min.css';
 import '../styles/common.css';
@@ -16,6 +17,7 @@ export const metadata: Metadata = {
   description: 'Share moments with your community',
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  await connection();
   return <html lang="en" data-scroll-behavior="smooth"><body suppressHydrationWarning className={poppins.className}>{children}</body></html>;
 }
